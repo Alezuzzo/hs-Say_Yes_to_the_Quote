@@ -3,41 +3,19 @@ import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
 import { jsPDF } from "jspdf";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import ServicoCard from "../components/ServicoCard";
 import ServicoSelecionadoItem from "../components/ServicoSelecionadoItem";
 import ResumoOrcamento from "../components/ResumoOrcamento";
-
-// Tipos e esquema de validação
-interface Servico {
-  id: number;
-  nome: string;
-  preco: number;
-}
-
-interface ServicoSelecionado extends Servico {
-  quantidade: number;
-}
-
-interface Orcamento {
-  id: string;
-  noiva: string;
-  dataEvento: string;
-  telefone: string;
-  email?: string;
-  observacoes?: string;
-  servicos: ServicoSelecionado[];
-  total: number;
-  dataCriacao: string;
-}
-
-interface FormData {
-  noiva: string;
-  dataEvento: string;
-  telefone: string;
-  email?: string;
-  observacoes?: string;
-}
+import {
+  formatarData,
+  formatarTelefone,
+} from "../utils/formatadores";
+import {
+  Orcamento,
+  Servico,
+  ServicoSelecionado,
+} from "../types/types";
 
 const schema = yup.object().shape({
   noiva: yup.string().required("Nome da noiva é obrigatório"),
@@ -53,50 +31,62 @@ const schema = yup.object().shape({
   observacoes: yup.string(),
 });
 
-const servicosDisponiveis: Servico[] = [
-  { id: 1, nome: "Penteado Noiva", preco: 200 },
-  { id: 2, nome: "Penteado Madrinha", preco: 150 },
-  { id: 3, nome: "Penteado Mãe da Noiva", preco: 150 },
-  { id: 4, nome: "Maquiagem Profissional", preco: 150 },
-  { id: 5, nome: "Tratamento Capilar", preco: 200 },
-  { id: 6, nome: "Manicure e Pedicure", preco: 100 },
-  { id: 7, nome: "Coffee Break", preco: 300 },
-];
-
-const formatarData = (dataString: string) => {
-  const data = new Date(dataString);
-  return data.toLocaleDateString("pt-BR", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  });
-};
-
 const NovoOrcamento: React.FC = () => {
+  const navigate = useNavigate();
   const {
     register,
     handleSubmit,
     formState: { errors },
     setValue,
-  } = useForm<FormData>({
+    reset,
+  } = useForm<Orcamento>({
     resolver: yupResolver(schema),
   });
 
   const [servicosSelecionados, setServicosSelecionados] = useState<
     ServicoSelecionado[]
   >([]);
+  const [servicosDisponiveis, setServicosDisponiveis] = useState<
+    Servico[]
+  >([]);
   const [total, setTotal] = useState<number>(0);
   const [adicionadoRecentemente, setAdicionadoRecentemente] =
     useState<number | null>(null);
-  const [orcamentos, setOrcamentos] = useState<Orcamento[]>([]);
+  const [filtroTipo, setFiltroTipo] = useState<
+    "todos" | "servico" | "produto"
+  >("todos");
 
+  // Carrega serviços do localStorage
   useEffect(() => {
-    const saved = localStorage.getItem("orcamentos");
+    const saved = localStorage.getItem("servicos");
     if (saved) {
-      setOrcamentos(JSON.parse(saved));
+      setServicosDisponiveis(JSON.parse(saved));
+    } else {
+      // Serviços padrão caso não exista no localStorage
+      setServicosDisponiveis([
+        {
+          id: 1,
+          nome: "Penteado Noiva",
+          preco: 200,
+          tipo: "servico",
+        },
+        {
+          id: 2,
+          nome: "Penteado Madrinha",
+          preco: 150,
+          tipo: "servico",
+        },
+        {
+          id: 3,
+          nome: "Maquiagem Profissional",
+          preco: 150,
+          tipo: "servico",
+        },
+      ]);
     }
   }, []);
 
+  // Atualiza total quando serviços selecionados mudam
   useEffect(() => {
     const novoTotal = servicosSelecionados.reduce(
       (sum, servico) => sum + servico.preco * servico.quantidade,
@@ -104,6 +94,12 @@ const NovoOrcamento: React.FC = () => {
     );
     setTotal(novoTotal);
   }, [servicosSelecionados]);
+
+  // Filtra serviços por tipo
+  const servicosFiltrados = servicosDisponiveis.filter((servico) => {
+    if (filtroTipo === "todos") return true;
+    return servico.tipo === filtroTipo;
+  });
 
   const adicionarServico = (servico: Servico) => {
     const existente = servicosSelecionados.find(
@@ -153,22 +149,15 @@ const NovoOrcamento: React.FC = () => {
     );
   };
 
-  const formatarTelefone = (value: string) => {
-    const nums = value.replace(/\D/g, "");
-    if (nums.length <= 2) return `(${nums}`;
-    if (nums.length <= 6)
-      return `(${nums.slice(0, 2)}) ${nums.slice(2)}`;
-    if (nums.length <= 10)
-      return `(${nums.slice(0, 2)}) ${nums.slice(2, 6)}-${nums.slice(
-        6
-      )}`;
-    return `(${nums.slice(0, 2)}) ${nums.slice(2, 7)}-${nums.slice(
-      7,
-      11
-    )}`;
+  const handleTelefoneChange = (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const formatted = formatarTelefone(e.target.value);
+    e.target.value = formatted;
+    setValue("telefone", formatted);
   };
 
-  const gerarPDF = (data: FormData) => {
+  const gerarPDF = (data: Orcamento) => {
     const doc = new jsPDF();
 
     doc.setFont("helvetica", "bold");
@@ -240,10 +229,10 @@ const NovoOrcamento: React.FC = () => {
       align: "center",
     });
 
-    doc.save(`Orçamento_${data.noiva.replace(" ", "_")}.pdf`);
+    return doc;
   };
 
-  const onSubmit = (data: FormData) => {
+  const onSubmit = (data: Orcamento) => {
     const novoOrcamento: Orcamento = {
       id: Date.now().toString(),
       ...data,
@@ -252,23 +241,30 @@ const NovoOrcamento: React.FC = () => {
       dataCriacao: new Date().toISOString(),
     };
 
-    const updatedOrcamentos = [...orcamentos, novoOrcamento];
-    setOrcamentos(updatedOrcamentos);
+    // Salva no localStorage
+    const orcamentosSalvos = JSON.parse(
+      localStorage.getItem("orcamentos") || "[]"
+    );
+    const updatedOrcamentos = [...orcamentosSalvos, novoOrcamento];
     localStorage.setItem(
       "orcamentos",
       JSON.stringify(updatedOrcamentos)
     );
 
-    gerarPDF(data);
-    alert(
-      `Orçamento para ${
-        data.noiva
-      } gerado com sucesso!\nTotal: R$ ${total.toFixed(2)}`
-    );
+    // Gera e baixa o PDF
+    const pdf = gerarPDF(novoOrcamento);
+    pdf.save(`Orçamento_${data.noiva.replace(" ", "_")}.pdf`);
+
+    // Redireciona para home com mensagem de sucesso
+    navigate("/", {
+      state: {
+        successMessage: `Orçamento para ${data.noiva} criado com sucesso!`,
+      },
+    });
   };
 
   return (
-    <div className="min-h-screen min-w-screen bg-blue-100">
+    <div className="min-h-screen bg-blue-50 p-6">
       <div
         className={`max-w-${
           servicosSelecionados.length > 0 ? "6xl" : "3xl"
@@ -282,10 +278,10 @@ const NovoOrcamento: React.FC = () => {
             Crie seu pacote personalizado para o grande dia
           </p>
           <Link
-            to="/orcamentos"
+            to="/"
             className="text-purple-500 hover:underline mt-4 inline-block"
           >
-            Ver orçamentos anteriores
+            Voltar para orçamentos
           </Link>
         </header>
 
@@ -352,13 +348,7 @@ const NovoOrcamento: React.FC = () => {
                   </label>
                   <input
                     {...register("telefone")}
-                    onChange={(e) => {
-                      const formatted = formatarTelefone(
-                        e.target.value
-                      );
-                      e.target.value = formatted;
-                      setValue("telefone", formatted);
-                    }}
+                    onChange={handleTelefoneChange}
                     className={`w-full px-4 py-2 border ${
                       errors.telefone
                         ? "border-red-500"
@@ -409,11 +399,48 @@ const NovoOrcamento: React.FC = () => {
               </div>
 
               <div className="mt-8">
-                <h2 className="text-xl font-bold text-purple-900 mb-4">
-                  Serviços Disponíveis
-                </h2>
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-xl font-bold text-purple-900">
+                    Serviços Disponíveis
+                  </h2>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setFiltroTipo("todos")}
+                      className={`px-3 py-1 rounded-full text-xs ${
+                        filtroTipo === "todos"
+                          ? "bg-purple-600 text-white"
+                          : "bg-gray-200"
+                      }`}
+                    >
+                      Todos
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setFiltroTipo("servico")}
+                      className={`px-3 py-1 rounded-full text-xs ${
+                        filtroTipo === "servico"
+                          ? "bg-purple-600 text-white"
+                          : "bg-gray-200"
+                      }`}
+                    >
+                      Serviços
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setFiltroTipo("produto")}
+                      className={`px-3 py-1 rounded-full text-xs ${
+                        filtroTipo === "produto"
+                          ? "bg-purple-600 text-white"
+                          : "bg-gray-200"
+                      }`}
+                    >
+                      Produtos
+                    </button>
+                  </div>
+                </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {servicosDisponiveis.map((servico) => (
+                  {servicosFiltrados.map((servico) => (
                     <ServicoCard
                       key={servico.id}
                       servico={servico}

@@ -1,20 +1,23 @@
+import React from "react";
 import {
   BrowserRouter as Router,
   Routes,
   Route,
 } from "react-router-dom";
-import NovoOrcamento from "./components/NovoOrcamento";
-import OrcamentoList from "./components/OrcamentoList";
+import Home from "./pages/Home";
+import NovoOrcamento from "./pages/NovoOrcamento";
+import Estoque from "./pages/Estoque";
 
-function App() {
+const App: React.FC = () => {
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<NovoOrcamento />} />
-        <Route path="/orcamentos" element={<OrcamentoList />} />
+        <Route path="/" element={<Home />} />
+        <Route path="/novo-orcamento" element={<NovoOrcamento />} />
+        <Route path="/estoque" element={<Estoque />} />
       </Routes>
     </Router>
   );
-}
+};
 
 export default App;

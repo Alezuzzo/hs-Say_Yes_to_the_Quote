@@ -1,10 +1,6 @@
 import React from "react";
-
-interface Servico {
-  id: number;
-  nome: string;
-  preco: number;
-}
+import { Servico } from "../types/types";
+import { formatarMoeda } from "../utils/formatadores";
 
 interface ServicoCardProps {
   servico: Servico;
@@ -17,29 +13,56 @@ const ServicoCard: React.FC<ServicoCardProps> = ({
   onAdicionar,
   adicionadoRecentemente,
 }) => {
+  const isRecentementeAdicionado =
+    adicionadoRecentemente === servico.id;
+
   return (
-    <div className="flex justify-between items-center p-4 border border-purple-100 rounded-lg hover:bg-purple-50 transition hover-effect">
-      <div>
-        <h3 className="font-medium text-purple-900">
-          {servico.nome}
-        </h3>
-        <p className="text-purple-700">
-          R$ {servico.preco.toFixed(2)}
-        </p>
+    <div
+      className={`relative p-4 border rounded-lg transition-all duration-200 ${
+        isRecentementeAdicionado
+          ? "border-green-500 bg-green-50"
+          : "border-gray-200 hover:border-purple-300 hover:shadow-md"
+      }`}
+    >
+      <div className="flex justify-between items-start">
+        <div>
+          <h3 className="font-medium text-gray-900">
+            {servico.nome}
+          </h3>
+          <span
+            className={`text-sm ${
+              servico.tipo === "servico"
+                ? "text-green-600"
+                : "text-blue-600"
+            }`}
+          >
+            {servico.tipo === "servico" ? "Serviço" : "Produto"}
+          </span>
+        </div>
+        <span className="font-bold text-purple-900">
+          {formatarMoeda(servico.preco)}
+        </span>
       </div>
+
       <button
-        type="button"
         onClick={() => onAdicionar(servico)}
-        className={`px-4 py-2 rounded-lg text-white transition ${
-          adicionadoRecentemente === servico.id
-            ? "bg-green-500"
-            : "bg-gradient-to-r from-purple-500 to-pink-500 hover:opacity-90"
+        className={`mt-3 w-full py-2 text-sm rounded-md transition-colors ${
+          isRecentementeAdicionado
+            ? "bg-green-500 text-white"
+            : "bg-purple-600 text-white hover:bg-purple-700"
         }`}
       >
-        {adicionadoRecentemente === servico.id
-          ? "✓ Adicionado"
-          : "Adicionar"}
+        {isRecentementeAdicionado ? "✓ Adicionado" : "+ Adicionar"}
       </button>
+
+      {isRecentementeAdicionado && (
+        <div className="absolute -top-2 -right-2">
+          <span className="flex h-4 w-4">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-4 w-4 bg-green-500"></span>
+          </span>
+        </div>
+      )}
     </div>
   );
 };
