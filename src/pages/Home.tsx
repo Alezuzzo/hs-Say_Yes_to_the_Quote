@@ -34,15 +34,6 @@ const Home: React.FC = () => {
     localStorage.setItem("orcamentos", JSON.stringify(updated));
   };
 
-  const removerOrcamento = (id: string) => {
-    const novosOrcamentos = orcamentos.filter((o) => o.id !== id);
-    setOrcamentos(novosOrcamentos);
-    localStorage.setItem(
-      "orcamentos",
-      JSON.stringify(novosOrcamentos)
-    );
-  };
-
   const filteredOrcamentos = orcamentos.filter((orcamento) =>
     orcamento.noiva.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -58,7 +49,7 @@ const Home: React.FC = () => {
             <div className="flex gap-4">
               <Link
                 to="/novo-orcamento"
-                className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg flex items-center"
+                className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg flex items-center transition-colors duration-200"
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -76,7 +67,7 @@ const Home: React.FC = () => {
               </Link>
               <Link
                 to="/estoque"
-                className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg flex items-center"
+                className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg flex items-center transition-colors duration-200"
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -100,10 +91,24 @@ const Home: React.FC = () => {
               <input
                 type="text"
                 placeholder="Buscar noiva..."
-                className="w-full py-1 px-2 pl-8 text-sm rounded-lg border border-gray-300 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full py-2 px-4 pl-10 text-sm rounded-lg border border-gray-300 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-shadow duration-200"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
+              <svg
+                className="absolute left-3 h-4 w-4 text-gray-400"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                />
+              </svg>
             </div>
           </div>
         </header>
@@ -137,7 +142,7 @@ const Home: React.FC = () => {
             {!searchTerm && (
               <Link
                 to="/novo-orcamento"
-                className="inline-block mt-4 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg"
+                className="inline-block mt-4 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition-colors duration-200"
               >
                 Criar Orçamento
               </Link>
@@ -149,16 +154,7 @@ const Home: React.FC = () => {
               <OrcamentoCard
                 key={orcamento.id}
                 orcamento={orcamento}
-                onRemove={(id) => {
-                  const novosOrcamentos = orcamentos.filter(
-                    (o) => o.id !== id
-                  );
-                  setOrcamentos(novosOrcamentos);
-                  localStorage.setItem(
-                    "orcamentos",
-                    JSON.stringify(novosOrcamentos)
-                  );
-                }}
+                onRemove={handleRemove}
               />
             ))}
           </div>

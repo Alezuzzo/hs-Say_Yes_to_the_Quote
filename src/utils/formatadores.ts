@@ -1,30 +1,41 @@
-export function formatarData(dataString: string): string {
-  const data = new Date(dataString);
-  return data.toLocaleDateString("pt-BR", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  });
-}
+// src/utils/formatadores.ts
 
-export const formatarMoeda = (valor: number): string => {
-  return new Intl.NumberFormat("pt-BR", {
-    style: "currency",
-    currency: "BRL",
-  }).format(valor);
+// Formata datas no padrão brasileiro (dd/mm/aaaa)
+export const formatarData = (dataString: string | Date): string => {
+  // Se já for um objeto Date, usa diretamente
+  if (dataString instanceof Date) {
+    return dataString.toLocaleDateString("pt-BR");
+  }
+
+  // Se for string, tenta converter para Date
+  const data = new Date(dataString);
+
+  // Verifica se a data é válida
+  if (isNaN(data.getTime())) {
+    console.error("Data inválida:", dataString);
+    return "Data inválida";
+  }
+
+  return data.toLocaleDateString("pt-BR");
 };
 
-export function formatarTelefone(value: string): string {
-  const nums = value.replace(/\D/g, "");
-  if (nums.length <= 2) return `(${nums}`;
-  if (nums.length <= 6)
-    return `(${nums.slice(0, 2)}) ${nums.slice(2)}`;
-  if (nums.length <= 10)
-    return `(${nums.slice(0, 2)}) ${nums.slice(2, 6)}-${nums.slice(
-      6
-    )}`;
-  return `(${nums.slice(0, 2)}) ${nums.slice(2, 7)}-${nums.slice(
-    7,
-    11
-  )}`;
-}
+// Formata valores monetários no padrão brasileiro (R$ 1.234,56)
+export const formatarMoeda = (valor: number): string => {
+  return valor.toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+};
+
+// Opcional: função para formatar números com casas decimais
+export const formatarNumero = (
+  valor: number,
+  casasDecimais = 2
+): string => {
+  return valor.toLocaleString("pt-BR", {
+    minimumFractionDigits: casasDecimais,
+    maximumFractionDigits: casasDecimais,
+  });
+};

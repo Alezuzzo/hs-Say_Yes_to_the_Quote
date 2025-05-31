@@ -1,30 +1,45 @@
+export type FormaPagamento =
+  | "pix"
+  | "avista"
+  | "entrada"
+  | "cartao"
+  | "boleto";
+
 export interface Servico {
-  id: number;
+  id: string;
   nome: string;
   preco: number;
-  tipo: "produto" | "servico";
-}
-
-export interface ServicoSelecionado extends Servico {
   quantidade: number;
+  estoque?: number; // Opcional para manter compatibilidade
 }
 
 export interface Orcamento {
   id: string;
   noiva: string;
-  dataEvento: string;
+  cpf: string;
+  endereco: string;
   telefone: string;
+  cidade: string;
+  pais: string;
   email?: string;
   observacoes?: string;
-  servicos: ServicoSelecionado[];
+  dataEvento: Date;
+  dataFim: Date;
+  dataCriacao: Date;
+  servicos: Servico[];
+  formaPagamento: FormaPagamento;
+  parcelas: number;
+  desconto: number;
   total: number;
-  dataCriacao: string;
 }
 
-export interface FormData {
-  noiva: string;
-  dataEvento: string;
-  telefone: string;
-  email?: string;
-  observacoes?: string;
+export type CategoriaItem = "servico" | "produto";
+
+export interface ItemEstoque {
+  id: string;
+  nome: string;
+  preco: number;
+  categoria: CategoriaItem;
+  estoque: number;
+  quantidade?: number; // Opcional para uso em orçamentos
 }
