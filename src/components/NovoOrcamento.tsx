@@ -150,7 +150,10 @@ const NovoOrcamento: React.FC<NovoOrcamentoProps> = ({
       cidade: "",
       estado: "",
       cep: "",
-      servicos: servicosSelecionados,
+      servicos: servicosSelecionados.map((s) => ({
+        ...s,
+        tipo: s.categoria, // Adiciona o campo 'tipo' exigido por Servico
+      })),
       formaPagamento: formData.formaPagamento,
       total,
       observacoes: formData.observacoes,
