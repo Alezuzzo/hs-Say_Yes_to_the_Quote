@@ -5,49 +5,86 @@ export type FormaPagamento =
   | "cartao"
   | "boleto";
 
-export interface Servico {
-  id: string;
-  nome: string;
-  preco: number;
-  quantidade: number;
-  estoque?: number; // Opcional para manter compatibilidade
-  tipo: "servico" | "produto";
-}
-
-export interface Orcamento {
-  id: string;
-  noiva: string;
-  cpf: string;
-  endereco: string;
-  telefone: string;
-  cidade: string;
-  pais: string;
-  email?: string;
-  observacoes?: string;
-  dataEvento: Date;
-  dataFim: Date;
-  dataCriacao: Date;
-  servicos: Servico[];
-  formaPagamento: FormaPagamento;
-  parcelas: number;
-  desconto: number;
-  total: number;
-}
-
 export type CategoriaItem = "servico" | "produto";
 
+// Item disponível no estoque
 export interface ItemEstoque {
   id: string;
   nome: string;
   preco: number;
   categoria: CategoriaItem;
   estoque: number;
-  quantidade?: number; // Opcional para uso em orçamentos
 }
 
+// Item selecionado para orçamento
 export interface ServicoSelecionado {
-  id: number;
+  id: string | number;
   nome: string;
   preco: number;
   quantidade: number;
+  tipo: CategoriaItem | string;
+  categoria?: CategoriaItem | string;
 }
+
+// Serviço usado no orçamento
+export interface Servico {
+  id: string;
+  nome: string;
+  preco: number;
+  quantidade: number;
+  tipo: CategoriaItem;
+  categoria: CategoriaItem;
+  estoque?: number;
+}
+
+export type Orcamento = {
+  id: string;
+  noiva: string;
+  dataEvento: Date;
+  telefone: string;
+  email?: string;
+  observacoes?: string;
+  servicos: Servico[];
+  total: number;
+  dataCriacao: Date;
+  formaPagamento: FormaPagamento;
+  cpf: string;
+  endereco: string;
+  cidade: string;
+  estado: string;
+  cep: string;
+  dataAtualizacao: Date;
+};
+
+// Tipos específicos para formulários
+export type OrcamentoFormFields = {
+  noiva: string;
+  dataEvento: Date;
+  telefone: string;
+  email: string;
+  observacoes: string;
+  servicos?: Servico[]; // Opcional no formulário
+};
+
+export type ServicoFormFields = {
+  id?: string;
+  nome: string;
+  preco: number;
+  tipo: CategoriaItem;
+  estoque?: number;
+};
+
+export type ApiResponse<T> = {
+  success: boolean;
+  data?: T;
+  error?: string;
+  message?: string;
+};
+
+export type PaginatedResponse<T> = {
+  data: T[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+};

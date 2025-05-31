@@ -1,9 +1,10 @@
 import React from "react";
 import { formatarMoeda } from "../utils/formatadores";
 
+// Permite receber qualquer função de submit do react-hook-form
 interface ResumoOrcamentoProps {
   total: number;
-  onSubmit: () => void;
+  onSubmit: (...args: unknown[]) => void;
 }
 
 const ResumoOrcamento: React.FC<ResumoOrcamentoProps> = ({
@@ -34,16 +35,21 @@ const ResumoOrcamento: React.FC<ResumoOrcamentoProps> = ({
 
       <div className="border-t border-purple-200 pt-4 mb-6">
         <div className="flex justify-between font-bold text-purple-900">
-          <span>Total:</span>
-          <span>{formatarMoeda(total)}</span>
+          <span className="text-lg font-semibold text-purple-800">
+            Total
+          </span>
+          <span className="text-2xl font-bold text-purple-900">
+            R$ {total.toFixed(2)}
+          </span>
         </div>
       </div>
 
       <button
+        type="button"
         onClick={onSubmit}
-        className="w-full bg-purple-600 hover:bg-purple-700 text-white py-3 px-4 rounded-lg font-medium transition-colors duration-200"
+        className="w-full bg-purple-600 text-white py-2 rounded-lg font-semibold hover:bg-purple-700 transition"
       >
-        Gerar Orçamento
+        Gerar Orçamento (PDF)
       </button>
 
       <p className="text-xs text-purple-500 mt-3 text-center">

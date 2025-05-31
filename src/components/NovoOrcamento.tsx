@@ -36,8 +36,10 @@ const NovoOrcamento: React.FC<NovoOrcamentoProps> = ({
   const [servicosDisponiveis, setServicosDisponiveis] = useState<
     ItemEstoque[]
   >([]);
+  type ItemOrcamento = ItemEstoque & { quantidade?: number };
+
   const [servicosSelecionados, setServicosSelecionados] = useState<
-    ItemEstoque[]
+    ItemOrcamento[]
   >([]);
   const [subtotal, setSubtotal] = useState(0);
   const [total, setTotal] = useState(0);
@@ -93,10 +95,11 @@ const NovoOrcamento: React.FC<NovoOrcamentoProps> = ({
         return;
       }
 
-      const atualizados = servicosSelecionados.map((s) =>
-        s.id === servico.id
-          ? { ...s, quantidade: (s.quantidade || 1) + 1 }
-          : s
+      const atualizados: ItemOrcamento[] = servicosSelecionados.map(
+        (s) =>
+          s.id === servico.id
+            ? { ...s, quantidade: (s.quantidade ?? 1) + 1 }
+            : s
       );
       setServicosSelecionados(atualizados);
     } else {
@@ -153,18 +156,17 @@ const NovoOrcamento: React.FC<NovoOrcamentoProps> = ({
       telefone: celular,
       dataEvento: new Date(dataEvento),
       dataCriacao: new Date(),
-      dataFim: new Date(dataEvento), // ajuste conforme necessário
+      dataAtualizacao: new Date(),
       endereco: "",
       cidade: "",
-      pais: "",
+      estado: "",
+      cep: "",
       servicos: servicosSelecionados.map((s) => ({
         ...s,
         quantidade: s.quantidade ?? 1,
         tipo: s.categoria === "produto" ? "produto" : "servico",
       })),
       formaPagamento,
-      parcelas: formaPagamento === "cartao" ? parcelas : 1,
-      desconto,
       total,
       observacoes,
     };

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, SubmitHandler } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
 import { jsPDF } from "jspdf";
@@ -7,40 +7,78 @@ import { Link, useNavigate } from "react-router-dom";
 import ServicoCard from "../components/ServicoCard";
 import ServicoSelecionadoItem from "../components/ServicoSelecionadoItem";
 import ResumoOrcamento from "../components/ResumoOrcamento";
-import {
-  formatarData,
-  formatarTelefone,
-} from "../utils/formatadores";
+import { formatarData } from "../utils/formatadores";
 import {
   Orcamento,
   Servico,
   ServicoSelecionado,
+  FormaPagamento,
 } from "../types/types";
 
+// Define os campos do formulário (apenas os que estão no form)
+type OrcamentoFormFields = {
+  noiva: string;
+  dataEvento: string;
+  telefone: string;
+  email: string;
+  observacoes: string;
+};
+
+// Definição do schema com tipos corretos
 const schema = yup.object().shape({
   noiva: yup.string().required("Nome da noiva é obrigatório"),
   dataEvento: yup
-    .date()
+    .string()
     .required("Data do evento é obrigatória")
-    .min(new Date(), "Data não pode ser no passado"),
+    .test(
+      "is-date",
+      "Data inválida",
+      (value) => !isNaN(Date.parse(value || ""))
+    ),
   telefone: yup
     .string()
     .required("Telefone é obrigatório")
     .matches(/^\(\d{2}\) \d{5}-\d{4}$/, "Formato inválido"),
-  email: yup.string().email("E-mail inválido"),
-  observacoes: yup.string(),
+  email: yup
+    .string()
+    .email("E-mail inválido")
+    .required("E-mail é obrigatório")
+    .default(""),
+  observacoes: yup.string().required().default(""),
 });
+
+const formatarTelefone = (telefone: string): string => {
+  const nums = telefone.replace(/\D/g, "");
+  if (nums.length <= 2) return nums;
+  if (nums.length <= 6)
+    return `(${nums.slice(0, 2)}) ${nums.slice(2)}`;
+  if (nums.length <= 11)
+    return `(${nums.slice(0, 2)}) ${nums.slice(2, 7)}-${nums.slice(
+      7
+    )}`;
+  return `(${nums.slice(0, 2)}) ${nums.slice(2, 7)}-${nums.slice(
+    7,
+    11
+  )}`;
+};
 
 const NovoOrcamento: React.FC = () => {
   const navigate = useNavigate();
+
   const {
     register,
     handleSubmit,
     formState: { errors },
     setValue,
-    reset,
-  } = useForm<Orcamento>({
+  } = useForm<OrcamentoFormFields>({
     resolver: yupResolver(schema),
+    defaultValues: {
+      noiva: "",
+      dataEvento: "",
+      telefone: "",
+      email: "",
+      observacoes: "",
+    },
   });
 
   const [servicosSelecionados, setServicosSelecionados] = useState<
@@ -65,22 +103,28 @@ const NovoOrcamento: React.FC = () => {
       // Serviços padrão caso não exista no localStorage
       setServicosDisponiveis([
         {
-          id: 1,
+          id: "1",
           nome: "Penteado Noiva",
           preco: 200,
+          quantidade: 1,
           tipo: "servico",
+          categoria: "servico",
         },
         {
-          id: 2,
+          id: "2",
           nome: "Penteado Madrinha",
           preco: 150,
+          quantidade: 1,
           tipo: "servico",
+          categoria: "servico",
         },
         {
-          id: 3,
+          id: "3",
           nome: "Maquiagem Profissional",
           preco: 150,
+          quantidade: 1,
           tipo: "servico",
+          categoria: "servico",
         },
       ]);
     }
@@ -103,13 +147,13 @@ const NovoOrcamento: React.FC = () => {
 
   const adicionarServico = (servico: Servico) => {
     const existente = servicosSelecionados.find(
-      (s) => s.id === servico.id
+      (s) => s.id === Number(servico.id)
     );
 
     if (existente) {
       setServicosSelecionados(
         servicosSelecionados.map((s) =>
-          s.id === servico.id
+          s.id === Number(servico.id)
             ? { ...s, quantidade: s.quantidade + 1 }
             : s
         )
@@ -117,11 +161,11 @@ const NovoOrcamento: React.FC = () => {
     } else {
       setServicosSelecionados([
         ...servicosSelecionados,
-        { ...servico, quantidade: 1 },
+        { ...servico, id: Number(servico.id), quantidade: 1 },
       ]);
     }
 
-    setAdicionadoRecentemente(servico.id);
+    setAdicionadoRecentemente(Number(servico.id));
     setTimeout(() => setAdicionadoRecentemente(null), 1000);
   };
 
@@ -204,7 +248,7 @@ const NovoOrcamento: React.FC = () => {
     });
 
     doc.setFontSize(14);
-    doc.setFont(undefined, "bold");
+    doc.setFont("helvetica", "bold");
     doc.text("Total:", 160, yPos + 10, { align: "right" });
     doc.text(`R$ ${total.toFixed(2)}`, 160, yPos + 20, {
       align: "right",
@@ -223,22 +267,30 @@ const NovoOrcamento: React.FC = () => {
       yPos + 80
     );
 
-    doc.setFontSize(10);
-    doc.setTextColor(100);
-    doc.text("Obrigado por escolher a HairStyle Studio!", 105, 280, {
-      align: "center",
-    });
-
     return doc;
   };
 
-  const onSubmit = (data: Orcamento) => {
+  const onSubmit: SubmitHandler<OrcamentoFormFields> = (data) => {
     const novoOrcamento: Orcamento = {
       id: Date.now().toString(),
       ...data,
-      servicos: servicosSelecionados,
+      dataEvento: new Date(data.dataEvento),
+      servicos: servicosSelecionados.map((s) => ({
+        ...s,
+        id: String(s.id),
+        tipo: s.tipo as import("../types/types").CategoriaItem,
+        categoria: (s.categoria ??
+          s.tipo) as import("../types/types").CategoriaItem,
+      })),
       total,
-      dataCriacao: new Date().toISOString(),
+      dataCriacao: new Date(),
+      formaPagamento: "pix" as FormaPagamento, // Definindo um valor padrão
+      cpf: "", // Adicionando campos obrigatórios faltantes
+      endereco: "",
+      cidade: "",
+      estado: "",
+      cep: "",
+      dataAtualizacao: new Date(),
     };
 
     // Salva no localStorage
@@ -292,169 +344,161 @@ const NovoOrcamento: React.FC = () => {
               : "flex-col"
           }`}
         >
-          <div
-            className={`${
-              servicosSelecionados.length > 0 ? "lg:w-1/2" : "w-full"
-            }`}
+          {/* Formulário de orçamento */}
+          <form
+            onSubmit={handleSubmit(onSubmit)}
+            className="space-y-6 lg:w-1/2"
           >
-            <form
-              onSubmit={handleSubmit(onSubmit)}
-              className="space-y-6"
-            >
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-purple-800 font-medium mb-2">
-                    Nome da Noiva*
-                  </label>
-                  <input
-                    {...register("noiva")}
-                    className={`w-full px-4 py-2 border ${
-                      errors.noiva
-                        ? "border-red-500"
-                        : "border-purple-200"
-                    } rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent`}
-                    placeholder="Seu nome completo"
-                  />
-                  {errors.noiva && (
-                    <span className="text-red-500 text-sm">
-                      {errors.noiva.message}
-                    </span>
-                  )}
-                </div>
+            <div>
+              <label className="block text-purple-800 font-medium mb-2">
+                Nome da Noiva*
+              </label>
+              <input
+                {...register("noiva")}
+                className={`w-full px-4 py-2 border ${
+                  errors.noiva
+                    ? "border-red-500"
+                    : "border-purple-200"
+                } rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent`}
+                placeholder="Seu nome completo"
+              />
+              {errors.noiva && (
+                <span className="text-red-500 text-sm">
+                  {errors.noiva.message}
+                </span>
+              )}
+            </div>
 
-                <div>
-                  <label className="block text-purple-800 font-medium mb-2">
-                    Data do Evento*
-                  </label>
-                  <input
-                    type="date"
-                    {...register("dataEvento")}
-                    className={`w-full px-4 py-2 border ${
-                      errors.dataEvento
-                        ? "border-red-500"
-                        : "border-purple-200"
-                    } rounded-lg focus:ring-2 focus:ring-purple-500`}
-                  />
-                  {errors.dataEvento && (
-                    <span className="text-red-500 text-sm">
-                      {errors.dataEvento.message}
-                    </span>
-                  )}
-                </div>
+            <div>
+              <label className="block text-purple-800 font-medium mb-2">
+                Data do Evento*
+              </label>
+              <input
+                type="date"
+                {...register("dataEvento")}
+                className={`w-full px-4 py-2 border ${
+                  errors.dataEvento
+                    ? "border-red-500"
+                    : "border-purple-200"
+                } rounded-lg focus:ring-2 focus:ring-purple-500`}
+              />
+              {errors.dataEvento && (
+                <span className="text-red-500 text-sm">
+                  {errors.dataEvento.message}
+                </span>
+              )}
+            </div>
 
-                <div>
-                  <label className="block text-purple-800 font-medium mb-2">
-                    Telefone*
-                  </label>
-                  <input
-                    {...register("telefone")}
-                    onChange={handleTelefoneChange}
-                    className={`w-full px-4 py-2 border ${
-                      errors.telefone
-                        ? "border-red-500"
-                        : "border-purple-200"
-                    } rounded-lg focus:ring-2 focus:ring-purple-500`}
-                    placeholder="(00) 00000-0000"
-                    maxLength={15}
-                  />
-                  {errors.telefone && (
-                    <span className="text-red-500 text-sm">
-                      {errors.telefone.message}
-                    </span>
-                  )}
-                </div>
+            <div>
+              <label className="block text-purple-800 font-medium mb-2">
+                Telefone*
+              </label>
+              <input
+                {...register("telefone")}
+                onChange={handleTelefoneChange}
+                className={`w-full px-4 py-2 border ${
+                  errors.telefone
+                    ? "border-red-500"
+                    : "border-purple-200"
+                } rounded-lg focus:ring-2 focus:ring-purple-500`}
+                placeholder="(00) 00000-0000"
+                maxLength={15}
+              />
+              {errors.telefone && (
+                <span className="text-red-500 text-sm">
+                  {errors.telefone.message}
+                </span>
+              )}
+            </div>
 
-                <div>
-                  <label className="block text-purple-800 font-medium mb-2">
-                    E-mail
-                  </label>
-                  <input
-                    type="email"
-                    {...register("email")}
-                    className={`w-full px-4 py-2 border ${
-                      errors.email
-                        ? "border-red-500"
-                        : "border-purple-200"
-                    } rounded-lg focus:ring-2 focus:ring-purple-500`}
-                    placeholder="seu@email.com"
-                  />
-                  {errors.email && (
-                    <span className="text-red-500 text-sm">
-                      {errors.email.message}
-                    </span>
-                  )}
-                </div>
-              </div>
+            <div>
+              <label className="block text-purple-800 font-medium mb-2">
+                E-mail
+              </label>
+              <input
+                type="email"
+                {...register("email")}
+                className={`w-full px-4 py-2 border ${
+                  errors.email
+                    ? "border-red-500"
+                    : "border-purple-200"
+                } rounded-lg focus:ring-2 focus:ring-purple-500`}
+                placeholder="seu@email.com"
+              />
+              {errors.email && (
+                <span className="text-red-500 text-sm">
+                  {errors.email.message}
+                </span>
+              )}
+            </div>
 
-              <div>
-                <label className="block text-purple-800 font-medium mb-2">
-                  Observações
-                </label>
-                <textarea
-                  {...register("observacoes")}
-                  className="w-full px-4 py-2 border border-purple-200 rounded-lg focus:ring-2 focus:ring-purple-500"
-                  placeholder="Observações adicionais"
-                  rows={3}
-                />
-              </div>
+            <div>
+              <label className="block text-purple-800 font-medium mb-2">
+                Observações
+              </label>
+              <textarea
+                {...register("observacoes")}
+                className="w-full px-4 py-2 border border-purple-200 rounded-lg focus:ring-2 focus:ring-purple-500"
+                placeholder="Observações adicionais"
+                rows={3}
+              />
+            </div>
 
-              <div className="mt-8">
-                <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-xl font-bold text-purple-900">
-                    Serviços Disponíveis
-                  </h2>
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setFiltroTipo("todos")}
-                      className={`px-3 py-1 rounded-full text-xs ${
-                        filtroTipo === "todos"
-                          ? "bg-purple-600 text-white"
-                          : "bg-gray-200"
-                      }`}
-                    >
-                      Todos
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setFiltroTipo("servico")}
-                      className={`px-3 py-1 rounded-full text-xs ${
-                        filtroTipo === "servico"
-                          ? "bg-purple-600 text-white"
-                          : "bg-gray-200"
-                      }`}
-                    >
-                      Serviços
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setFiltroTipo("produto")}
-                      className={`px-3 py-1 rounded-full text-xs ${
-                        filtroTipo === "produto"
-                          ? "bg-purple-600 text-white"
-                          : "bg-gray-200"
-                      }`}
-                    >
-                      Produtos
-                    </button>
-                  </div>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {servicosFiltrados.map((servico) => (
-                    <ServicoCard
-                      key={servico.id}
-                      servico={servico}
-                      onAdicionar={adicionarServico}
-                      adicionadoRecentemente={adicionadoRecentemente}
-                    />
-                  ))}
+            <div className="mt-8">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-bold text-purple-900">
+                  Serviços Disponíveis
+                </h2>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setFiltroTipo("todos")}
+                    className={`px-3 py-1 rounded-full text-xs ${
+                      filtroTipo === "todos"
+                        ? "bg-purple-600 text-white"
+                        : "bg-gray-200"
+                    }`}
+                  >
+                    Todos
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFiltroTipo("servico")}
+                    className={`px-3 py-1 rounded-full text-xs ${
+                      filtroTipo === "servico"
+                        ? "bg-purple-600 text-white"
+                        : "bg-gray-200"
+                    }`}
+                  >
+                    Serviços
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFiltroTipo("produto")}
+                    className={`px-3 py-1 rounded-full text-xs ${
+                      filtroTipo === "produto"
+                        ? "bg-purple-600 text-white"
+                        : "bg-gray-200"
+                    }`}
+                  >
+                    Produtos
+                  </button>
                 </div>
               </div>
-            </form>
-          </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {servicosFiltrados.map((servico) => (
+                  <ServicoCard
+                    key={servico.id}
+                    servico={servico}
+                    onAdicionar={adicionarServico}
+                    adicionadoRecentemente={adicionadoRecentemente}
+                  />
+                ))}
+              </div>
+            </div>
 
-          {servicosSelecionados.length > 0 && (
-            <div className="lg:w-1/2">
+            {/* Serviços Selecionados e Resumo */}
+            {servicosSelecionados.length > 0 && (
               <div className="mt-8">
                 <h2 className="text-xl font-bold text-purple-900 mb-4">
                   Serviços Selecionados
@@ -470,14 +514,10 @@ const NovoOrcamento: React.FC = () => {
                     />
                   ))}
                 </ul>
-
-                <ResumoOrcamento
-                  total={total}
-                  onSubmit={handleSubmit(onSubmit)}
-                />
+                <ResumoOrcamento total={total} onSubmit={() => {}} />
               </div>
-            </div>
-          )}
+            )}
+          </form>
         </div>
       </div>
     </div>

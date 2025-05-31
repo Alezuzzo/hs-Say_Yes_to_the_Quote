@@ -39,3 +39,16 @@ export const formatarNumero = (
     maximumFractionDigits: casasDecimais,
   });
 };
+
+export function formatarTelefone(telefone: string): string {
+  // Remove all non-digit characters
+  const cleaned = telefone.replace(/\D/g, "");
+  // Format as (XX) XXXXX-XXXX
+  if (cleaned.length <= 2) return cleaned;
+  if (cleaned.length <= 7)
+    return `(${cleaned.slice(0, 2)}) ${cleaned.slice(2)}`;
+  return `(${cleaned.slice(0, 2)}) ${cleaned.slice(
+    2,
+    7
+  )}-${cleaned.slice(7, 11)}`;
+}

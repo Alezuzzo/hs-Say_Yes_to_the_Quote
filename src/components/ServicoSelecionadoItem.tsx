@@ -18,7 +18,7 @@ const ServicoSelecionadoItem: React.FC<
         <h4 className="font-medium text-gray-900">{servico.nome}</h4>
         <div className="flex items-center mt-1">
           <button
-            onClick={() => onDecrementar(servico.id)}
+            onClick={() => onDecrementar(Number(servico.id))}
             disabled={servico.quantidade <= 1}
             className={`w-8 h-8 flex items-center justify-center rounded-md ${
               servico.quantidade <= 1
@@ -32,7 +32,7 @@ const ServicoSelecionadoItem: React.FC<
             {servico.quantidade}
           </span>
           <button
-            onClick={() => onIncrementar(servico.id)}
+            onClick={() => onIncrementar(Number(servico.id))}
             className="w-8 h-8 flex items-center justify-center bg-purple-100 text-purple-700 hover:bg-purple-200 rounded-md"
           >
             +
@@ -50,7 +50,7 @@ const ServicoSelecionadoItem: React.FC<
       </div>
 
       <button
-        onClick={() => onRemover(servico.id)}
+        onClick={() => onRemover(Number(servico.id))}
         className="ml-4 p-2 text-gray-500 hover:text-red-500 hover:bg-red-50 rounded-full"
         aria-label="Remover"
       >

@@ -60,7 +60,7 @@ const OrcamentoCard: React.FC<OrcamentoCardProps> = ({
     });
 
     doc.setFontSize(14);
-    doc.setFont(undefined, "bold");
+    doc.setFont("helvetica", "bold");
     doc.text("Total:", 160, yPos + 10, { align: "right" });
     doc.text(`R$ ${orcamento.total.toFixed(2)}`, 160, yPos + 20, {
       align: "right",

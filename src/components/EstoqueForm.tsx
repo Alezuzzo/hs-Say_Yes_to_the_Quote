@@ -1,23 +1,29 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
 import { Servico } from "../types/types";
 
-const schema = yup.object().shape({
+const schema = yup.object({
   nome: yup.string().required("Nome é obrigatório"),
   preco: yup
     .number()
     .required("Preço é obrigatório")
     .positive("Preço deve ser positivo"),
   tipo: yup
-    .string()
-    .required("Tipo é obrigatório")
-    .oneOf(["produto", "servico"]),
+    .mixed<"produto" | "servico">()
+    .oneOf(["produto", "servico"])
+    .required("Tipo é obrigatório"),
 });
 
+type EstoqueFormFields = {
+  nome: string;
+  preco: number;
+  tipo: "produto" | "servico";
+};
+
 interface EstoqueFormProps {
-  onSubmit: (servico: Servico) => void;
+  onSubmit: (servico: EstoqueFormFields) => void;
   servico: Servico | null;
   onCancel: () => void;
 }
@@ -32,18 +38,27 @@ const EstoqueForm: React.FC<EstoqueFormProps> = ({
     handleSubmit,
     reset,
     formState: { errors },
-  } = useForm<Servico>({
+  } = useForm<EstoqueFormFields>({
     resolver: yupResolver(schema),
-    defaultValues: servico || {
-      nome: "",
-      preco: 0,
-      tipo: "servico",
-    },
+    defaultValues: servico
+      ? {
+          nome: servico.nome,
+          preco: servico.preco,
+          tipo: servico.tipo as "produto" | "servico",
+        }
+      : {
+          nome: "",
+          preco: 0,
+          tipo: "servico",
+        },
   });
-
   useEffect(() => {
     if (servico) {
-      reset(servico);
+      reset({
+        nome: servico.nome,
+        preco: servico.preco,
+        tipo: servico.tipo as "produto" | "servico",
+      });
     } else {
       reset({
         nome: "",
@@ -53,7 +68,7 @@ const EstoqueForm: React.FC<EstoqueFormProps> = ({
     }
   }, [servico, reset]);
 
-  const handleFormSubmit = (data: Servico) => {
+  const handleFormSubmit = (data: EstoqueFormFields) => {
     onSubmit(data);
     if (!servico) {
       reset({
