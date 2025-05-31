@@ -11,6 +11,7 @@ export interface Servico {
   preco: number;
   quantidade: number;
   estoque?: number; // Opcional para manter compatibilidade
+  tipo: "servico" | "produto";
 }
 
 export interface Orcamento {
@@ -42,4 +43,11 @@ export interface ItemEstoque {
   categoria: CategoriaItem;
   estoque: number;
   quantidade?: number; // Opcional para uso em orçamentos
+}
+
+export interface ServicoSelecionado {
+  id: number;
+  nome: string;
+  preco: number;
+  quantidade: number;
 }

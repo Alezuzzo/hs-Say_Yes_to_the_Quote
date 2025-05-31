@@ -1,5 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { Orcamento, ItemEstoque } from "../types/types";
+import {
+  Orcamento,
+  ItemEstoque,
+  FormaPagamento,
+} from "../types/types";
 import { formatarMoeda } from "../utils/formatadores";
 
 interface NovoOrcamentoProps {
@@ -23,7 +27,8 @@ const NovoOrcamento: React.FC<NovoOrcamentoProps> = ({
   const [observacoes, setObservacoes] = useState("");
 
   // Estados para pagamento
-  const [formaPagamento, setFormaPagamento] = useState<string>("pix");
+  const [formaPagamento, setFormaPagamento] =
+    useState<FormaPagamento>("pix");
   const [parcelas, setParcelas] = useState(1);
   const [desconto, setDesconto] = useState(0);
 
@@ -148,7 +153,15 @@ const NovoOrcamento: React.FC<NovoOrcamentoProps> = ({
       telefone: celular,
       dataEvento: new Date(dataEvento),
       dataCriacao: new Date(),
-      servicos: servicosSelecionados,
+      dataFim: new Date(dataEvento), // ajuste conforme necessário
+      endereco: "",
+      cidade: "",
+      pais: "",
+      servicos: servicosSelecionados.map((s) => ({
+        ...s,
+        quantidade: s.quantidade ?? 1,
+        tipo: s.categoria === "produto" ? "produto" : "servico",
+      })),
       formaPagamento,
       parcelas: formaPagamento === "cartao" ? parcelas : 1,
       desconto,
@@ -477,7 +490,9 @@ const NovoOrcamento: React.FC<NovoOrcamentoProps> = ({
                   <select
                     value={formaPagamento}
                     onChange={(e) => {
-                      setFormaPagamento(e.target.value);
+                      setFormaPagamento(
+                        e.target.value as FormaPagamento
+                      );
                       if (e.target.value !== "cartao") {
                         setParcelas(1);
                       }

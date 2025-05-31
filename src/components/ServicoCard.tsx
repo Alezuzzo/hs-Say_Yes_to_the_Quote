@@ -14,7 +14,7 @@ const ServicoCard: React.FC<ServicoCardProps> = ({
   adicionadoRecentemente,
 }) => {
   const isRecentementeAdicionado =
-    adicionadoRecentemente === servico.id;
+    adicionadoRecentemente === Number(servico.id);
 
   return (
     <div
